@@ -19,7 +19,7 @@ There are two versions available.
 
 ### With Node.js Included
 
-[Download Microsoft-Learn-Extractor-With-Node](https://github.com/shinjukurc/microsoft-learn-agent/releases/download/v1.0.2/Microsoft-Learn-Extractor-With-Node.zip)
+[Download Microsoft-Learn-Extractor-With-Node]([https://github.com/shinjukurc/microsoft-learn-agent/releases/download/v1.0.2/Microsoft-Learn-Extractor-With-Node.zip](https://github.com/shinjukuarc/microsoft-learn-agent/releases/download/v1.0.2/Microsoft-Learn-Extractor-With-Node.zip))
 
 Use this version if you **do not have Node.js installed**.
 
@@ -34,7 +34,7 @@ Use this version if you **do not have Node.js installed**.
 
 ### Without Node.js
 
-[Download Microsoft-Learn-Extractor-Without-Node](https://github.com/shinjukurc/microsoft-learn-agent/releases/download/v1.0.2/Microsoft-Learn-Extractor-Without-Node.zip)
+[Download Microsoft-Learn-Extractor-Without-Node]([https://github.com/shinjukurc/microsoft-learn-agent/releases/download/v1.0.2/Microsoft-Learn-Extractor-Without-Node.zip](https://github.com/shinjukuarc/microsoft-learn-agent/releases/download/v1.0.2/Microsoft-Learn-Extractor-Without-Node.zip))
 
 Use this version if you **already have a compatible version of Node.js installed**.
 
