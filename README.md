@@ -56,3 +56,10 @@ You can enter multiple URLs:
 ```text
 https://learn.microsoft.com/en-us/training/modules/example-module/
 https://learn.microsoft.com/en-us/training/paths/example-learning-path/
+
+### Arabic Translation
+
+You can translate the extracted content to Arabic by selecting `y` when prompted:
+
+```text
+Translate extracted content to Arabic? (y/n): y
