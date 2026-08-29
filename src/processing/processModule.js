@@ -2,9 +2,16 @@ const fs = require("fs");
 const path = require("path");
 
 const { extractLesson } = require("../extraction/extractor");
+const { translateLesson } = require("../ai/translator");
 const { createModuleDocument } = require("../output/word");
 
-async function processModule(page, module, moduleNumber, outputPath) {
+async function processModule(
+    page,
+    module,
+    moduleNumber,
+    outputPath,
+    translateToArabic
+) {
 
     const outputDir = path.dirname(outputPath);
 
@@ -166,6 +173,12 @@ async function processModule(page, module, moduleNumber, outputPath) {
                     );
                 }
 
+                if (translateToArabic) {
+
+                    lesson = await translateLesson(lesson);
+
+                }
+
                 break;
 
             } catch (error) {
@@ -248,11 +261,15 @@ async function processModule(page, module, moduleNumber, outputPath) {
     // CREATE WORD DOCUMENT
     // ==========================================
 
+    console.log("translateToArabic:", translateToArabic);
+
+
     await createModuleDocument(
         moduleNumber,
         module.title,
         lessons,
-        outputPath
+        outputPath,
+        translateToArabic
     );
 
     console.log(

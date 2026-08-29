@@ -85,6 +85,26 @@ async function getUrls() {
     });
 }
 
+function getTranslationChoice() {
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+    });
+
+    return new Promise((resolve) => {
+        rl.question(
+            "\nTranslate extracted content to Arabic? (y/n): ",
+            (answer) => {
+                rl.close();
+
+                resolve(
+                    answer.trim().toLowerCase() === "y"
+                );
+            }
+        );
+    });
+}
+
 async function main() {
 
     const urls = await getUrls();
@@ -93,6 +113,17 @@ async function main() {
         console.log("No URLs provided.");
         process.exit(1);
     }
+
+    const translateToArabic =
+        await getTranslationChoice();
+
+    console.log(
+        `\nTranslation: ${
+            translateToArabic
+                ? "Arabic"
+                : "English"
+        }`
+    );
 
     console.log(`\n${urls.length} URL(s) detected.\n`);
     let completedUrls = 0;
@@ -348,20 +379,23 @@ async function main() {
 
                 const module = await getModule(page);
 
+                const languageSuffix = translateToArabic
+                    ? " - Arabic"
+                    : " - English";
                 let outputPath;
 
                 if (urlType === "module") {
 
                     outputPath = path.join(
                         modulesDir,
-                        `${module.title}.docx`
+                        `${module.title}${languageSuffix}.docx`
                     );
 
                 } else {
 
                     outputPath = path.join(
                         learningPathOutputDir,
-                        `${moduleNumber}-${module.title}.docx`
+                        `${moduleNumber}-${module.title}${languageSuffix}.docx`
                     );
                 }
 
@@ -371,7 +405,8 @@ async function main() {
                     urlType === "module"
                         ? null
                         : moduleNumber,
-                    outputPath
+                    outputPath,
+                    translateToArabic
                 );
             }
         }

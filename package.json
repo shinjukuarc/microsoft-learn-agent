@@ -12,8 +12,10 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@google/genai": "^2.18.0",
     "cheerio": "^1.2.0",
     "docx": "^9.7.1",
+    "dotenv": "^17.4.2",
     "playwright": "^1.62.1"
   },
   "devDependencies": {

@@ -3,3 +3,4 @@
 ./output/
 ./playwright/.auth/
 ./*.log
+./.env

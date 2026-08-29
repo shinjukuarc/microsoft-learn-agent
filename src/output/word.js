@@ -14,12 +14,37 @@ const {
     Bookmark,
     ShadingType,
     Footer,
-    PageNumber
+    PageNumber,
+    AlignmentType,
+    LevelFormat,
+    LevelSuffix
 } = require("docx");
 
 const https = require("https");
 const http = require("http");
 
+function createTextRun(options, isArabic) {
+    return new TextRun({
+        ...options,
+        rightToLeft: isArabic ? true : false,
+        font: isArabic ? "Arial" : undefined
+    });
+}
+
+function createParagraph(options, isArabic) {
+    return new Paragraph({
+        ...options,
+        alignment: options.alignment ?? (
+            isArabic
+                ? AlignmentType.RIGHT
+                : AlignmentType.LEFT
+        ),
+        bidirectional: options.bidirectional ?? false,
+        run: options.run ?? (
+            isArabic ? { rightToLeft: true } : undefined
+        )
+    });
+}
 function downloadImage(url) {
     return new Promise((resolve, reject) => {
 
@@ -58,41 +83,61 @@ function downloadImage(url) {
     });
 }
 
-async function createModuleDocument(moduleNumber, moduleTitle, lessons, outputPath) {
+async function createModuleDocument(
+    moduleNumber,
+    moduleTitle,
+    lessons,
+    outputPath,
+    isArabic = false
+) {
+    console.log("isArabic inside createModuleDocument:", isArabic);
 
     const children = [];
 
     // Module title
     children.push(
-        new Paragraph({
-            text: moduleNumber
-                ? `${moduleNumber}. ${moduleTitle}`
-                : moduleTitle,
+        createParagraph({
+            children: [
+                createTextRun({
+                    text: moduleNumber
+                        ? `${moduleNumber}. ${moduleTitle}`
+                        : moduleTitle
+                }, isArabic)
+            ],
+            alignment: AlignmentType.CENTER,
             heading: HeadingLevel.TITLE,
-            alignment: "center",
             spacing: {
                 before: 3000,
                 after: 300
             }
-        })
+        }, isArabic)
     );
 
     children.push(
-        new Paragraph({
-            text: "Microsoft Learn",
-            alignment: "center",
+        createParagraph({
+            children: [
+                createTextRun({
+                    text: "Microsoft Learn"
+                }, isArabic)
+            ],
             spacing: {
                 after: 3000
             }
-        })
+        }, isArabic)
     );
 
     // Table of Contents
     children.push(
-        new Paragraph({
-            text: "Table of Contents",
-            heading: HeadingLevel.HEADING_1
-        })
+        createParagraph({
+            children: [
+                createTextRun({
+                    text: isArabic
+                        ? "جدول المحتويات"
+                        : "Table of Contents"
+                }, isArabic)
+            ],
+            heading: HeadingLevel.HEADING_1,
+        }, isArabic)
     );
 
     for (const lesson of lessons) {
@@ -100,31 +145,33 @@ async function createModuleDocument(moduleNumber, moduleTitle, lessons, outputPa
         const bookmarkId = `lesson-${lesson.number}`;
 
         children.push(
-            new Paragraph({
+            createParagraph({
                 children: [
                     new InternalHyperlink({
                         children: [
-                            new TextRun({
+                            createTextRun({
                                 text: `${lesson.number}. ${lesson.title}`,
                                 style: "Hyperlink"
-                            })
+                            }, isArabic)
                         ],
                         anchor: bookmarkId
                     })
                 ],
+
+
                 spacing: {
                     after: 100
                 }
-            })
+            }, isArabic)
         );
     }
 
     children.push(
-        new Paragraph({
+        createParagraph({
             children: [
                 new PageBreak()
             ]
-        })
+        }, isArabic)
     );
 
 
@@ -141,11 +188,11 @@ async function createModuleDocument(moduleNumber, moduleTitle, lessons, outputPa
 
         if (lessonStarted) {
             children.push(
-                new Paragraph({
+                createParagraph({
                     children: [
                         new PageBreak()
                     ]
-                })
+                }, isArabic)
             );
         }
 
@@ -153,39 +200,45 @@ async function createModuleDocument(moduleNumber, moduleTitle, lessons, outputPa
 
         // Lesson title
         children.push(
-            new Paragraph({
+            createParagraph({
                 children: [
                     new Bookmark({
                         id: `lesson-${lesson.number}`,
                         children: [
-                            new TextRun({
+                            createTextRun({
                                 text: `${lesson.number}. ${lesson.title}`
-                            })
+                            }, isArabic)
                         ]
                     })
                 ],
                 heading: HeadingLevel.HEADING_1,
+
+
                 spacing: {
                     before: 200,
                     after: 300
                 }
-            })
+            }, isArabic)
         );
 
         if (lesson.duration) {
 
             children.push(
-                new Paragraph({
+                createParagraph({
                     children: [
-                        new TextRun({
-                            text: `Duration: ${lesson.duration}`,
+                        createTextRun({
+                            text: isArabic
+                                ? `المدة: ${lesson.duration}`
+                                : `Duration: ${lesson.duration}`,
                             italics: true
-                        })
+                        }, isArabic)
                     ],
+    
+    
                     spacing: {
                         after: 250
                     }
-                })
+                }, isArabic)
             );
         }
 
@@ -211,11 +264,11 @@ async function createModuleDocument(moduleNumber, moduleTitle, lessons, outputPa
                     if (run.type === "text") {
 
                         headingRuns.push(
-                            new TextRun({
+                            createTextRun({
                                 text: run.text,
                                 bold: run.bold || false,
                                 italics: run.italics || false
-                            })
+                            }, isArabic)
                         );
 
                     } else if (run.type === "link") {
@@ -223,12 +276,12 @@ async function createModuleDocument(moduleNumber, moduleTitle, lessons, outputPa
                         headingRuns.push(
                             new ExternalHyperlink({
                                 children: [
-                                    new TextRun({
+                                    createTextRun({
                                         text: run.text,
                                         style: "Hyperlink",
                                         bold: run.bold || false,
                                         italics: run.italics || false
-                                    })
+                                    }, isArabic)
                                 ],
                                 link: run.href
                             })
@@ -250,14 +303,16 @@ async function createModuleDocument(moduleNumber, moduleTitle, lessons, outputPa
                 }
 
                 children.push(
-                    new Paragraph({
+                    createParagraph({
                         children: headingRuns,
                         heading: headingLevel,
+        
+        
                         spacing: {
                             before: 250,
                             after: 150
                         }
-                    })
+                    }, isArabic)
                 );
 
             } else if (item.type === "callout") {
@@ -270,7 +325,15 @@ async function createModuleDocument(moduleNumber, moduleTitle, lessons, outputPa
                     WARNING: "FDECEC"
                 };
 
-                const labels = {
+                const labels = isArabic
+                ? {
+                    NOTE: "ملاحظة",
+                    TIP: "نصيحة",
+                    IMPORTANT: "هام",
+                    CAUTION: "تنبيه",
+                    WARNING: "تحذير"
+                }
+                : {
                     NOTE: "NOTE",
                     TIP: "TIP",
                     IMPORTANT: "IMPORTANT",
@@ -281,10 +344,10 @@ async function createModuleDocument(moduleNumber, moduleTitle, lessons, outputPa
                 const calloutRuns = [];
 
                 calloutRuns.push(
-                    new TextRun({
+                    createTextRun({
                         text: `${labels[item.calloutType] || "NOTE"}: `,
                         bold: true
-                    })
+                    }, isArabic)
                 );
 
                 for (const run of item.runs || []) {
@@ -292,24 +355,22 @@ async function createModuleDocument(moduleNumber, moduleTitle, lessons, outputPa
                     if (run.type === "text") {
 
                         calloutRuns.push(
-                            new TextRun({
+                            createTextRun({
                                 text: run.text,
                                 bold: run.bold || false,
                                 italics: run.italics || false
-                            })
+                            }, isArabic)
                         );
-
                     } else if (run.type === "link") {
 
                         calloutRuns.push(
                             new ExternalHyperlink({
                                 children: [
-                                    new TextRun({
+                                    createTextRun({
                                         text: run.text,
-                                        style: "Hyperlink",
                                         bold: run.bold || false,
                                         italics: run.italics || false
-                                    })
+                                    }, isArabic)
                                 ],
                                 link: run.href
                             })
@@ -331,8 +392,10 @@ async function createModuleDocument(moduleNumber, moduleTitle, lessons, outputPa
                 }
 
                 children.push(
-                    new Paragraph({
+                    createParagraph({
                         children: calloutRuns,
+        
+        
                         shading: {
                             type: ShadingType.SOLID,
                             fill: colors[item.calloutType] || colors.NOTE
@@ -341,7 +404,7 @@ async function createModuleDocument(moduleNumber, moduleTitle, lessons, outputPa
                             before: 200,
                             after: 200
                         }
-                    })
+                    }, isArabic)
                 );
 
             } else if (item.type === "paragraph") {
@@ -353,11 +416,11 @@ async function createModuleDocument(moduleNumber, moduleTitle, lessons, outputPa
                     if (run.type === "text") {
 
                         paragraphRuns.push(
-                            new TextRun({
+                            createTextRun({
                                 text: run.text,
                                 bold: run.bold || false,
                                 italics: run.italics || false
-                            })
+                            }, isArabic)
                         );
 
                         } else if (run.type === "code") {
@@ -378,12 +441,12 @@ async function createModuleDocument(moduleNumber, moduleTitle, lessons, outputPa
                         paragraphRuns.push(
                             new ExternalHyperlink({
                                 children: [
-                                    new TextRun({
+                                    createTextRun({
                                         text: run.text,
                                         style: "Hyperlink",
                                         bold: run.bold || false,
                                         italics: run.italics || false
-                                    })
+                                    }, isArabic)
                                 ],
                                 link: run.href
                             })
@@ -392,13 +455,15 @@ async function createModuleDocument(moduleNumber, moduleTitle, lessons, outputPa
                 }
 
                 children.push(
-                    new Paragraph({
+                    createParagraph({
                         children: paragraphRuns,
+        
+        
                         spacing: {
                             after: 200,
                             line: 276
                         }
-                    })
+                    }, isArabic)
                 );
 
             } else if (item.type === "checklist") {
@@ -408,10 +473,10 @@ async function createModuleDocument(moduleNumber, moduleTitle, lessons, outputPa
                     const checklistRuns = [];
 
                     checklistRuns.push(
-                        new TextRun({
+                        createTextRun({
                             text: "☐ ",
                             font: "Arial"
-                        })
+                        }, isArabic)
                     );
 
                     for (const run of listItem.runs || []) {
@@ -419,11 +484,11 @@ async function createModuleDocument(moduleNumber, moduleTitle, lessons, outputPa
                         if (run.type === "text") {
 
                             checklistRuns.push(
-                                new TextRun({
+                                createTextRun({
                                     text: run.text,
                                     bold: run.bold || false,
                                     italics: run.italics || false
-                                })
+                                }, isArabic)
                             );
 
                         } else if (run.type === "link") {
@@ -431,17 +496,16 @@ async function createModuleDocument(moduleNumber, moduleTitle, lessons, outputPa
                             checklistRuns.push(
                                 new ExternalHyperlink({
                                     children: [
-                                        new TextRun({
+                                        createTextRun({
                                             text: run.text,
                                             style: "Hyperlink",
                                             bold: run.bold || false,
                                             italics: run.italics || false
-                                        })
+                                        }, isArabic)
                                     ],
                                     link: run.href
                                 })
                             );
-
                         } else if (run.type === "code") {
 
                             checklistRuns.push(
@@ -458,15 +522,17 @@ async function createModuleDocument(moduleNumber, moduleTitle, lessons, outputPa
                     }
 
                     children.push(
-                        new Paragraph({
+                        createParagraph({
                             children: checklistRuns,
-                            indent: {
-                                left: 360
-                            },
+            
+            
+                            indent: isArabic
+                                ? { right: 360 }
+                                : { left: 360 },
                             spacing: {
                                 after: 100
                             }
-                        })
+                        }, isArabic)
                     );
                 }    
 
@@ -481,11 +547,11 @@ async function createModuleDocument(moduleNumber, moduleTitle, lessons, outputPa
                         if (run.type === "text") {
 
                             listRuns.push(
-                                new TextRun({
+                                createTextRun({
                                     text: run.text,
                                     bold: run.bold || false,
                                     italics: run.italics || false
-                                })
+                                }, isArabic)
                             );
 
                         } else if (run.type === "code") {
@@ -506,12 +572,12 @@ async function createModuleDocument(moduleNumber, moduleTitle, lessons, outputPa
                             listRuns.push(
                                 new ExternalHyperlink({
                                     children: [
-                                        new TextRun({
+                                        createTextRun({
                                             text: run.text,
                                             style: "Hyperlink",
                                             bold: run.bold || false,
                                             italics: run.italics || false
-                                        })
+                                        }, isArabic)
                                     ],
                                     link: run.href
                                 })
@@ -522,24 +588,36 @@ async function createModuleDocument(moduleNumber, moduleTitle, lessons, outputPa
                     if (listItem.ordered) {
 
                         children.push(
-                            new Paragraph({
+                            createParagraph({
                                 children: listRuns,
                                 numbering: {
                                     reference: "lesson-numbered-list",
                                     level: listItem.level
-                                }
-                            })
+                                },
+                                alignment:AlignmentType.LEFT,
+                                bidirectional: isArabic
+                            }, isArabic)
                         );
 
                     } else {
 
+                        // CHANGED: was `bullet: { level: listItem.level }`.
+                        // The built-in `bullet` shorthand always renders a
+                        // hardcoded LTR numbering definition (lvlJc="left"),
+                        // no matter what paragraph settings you pass. Using
+                        // our own "lesson-bullet-list" numbering reference
+                        // (defined below) lets it flip to RTL like the
+                        // numbered list does.
                         children.push(
-                            new Paragraph({
+                            createParagraph({
                                 children: listRuns,
-                                bullet: {
+                                numbering: {
+                                    reference: "lesson-bullet-list",
                                     level: listItem.level
-                                }
-                            })
+                                },
+                                alignment: AlignmentType.LEFT,
+                                bidirectional: isArabic
+                            }, isArabic)
                         );
                     }
                 }
@@ -557,16 +635,16 @@ async function createModuleDocument(moduleNumber, moduleTitle, lessons, outputPa
                                 if (run.type === "text") {
 
                                     cellRuns.push(
-                                        new TextRun({
+                                        createTextRun({
                                             text: run.text,
                                             bold: run.bold || false,
                                             italics: run.italics || false
-                                        })
+                                        }, isArabic)
                                     );
 
                                 } else if (run.type === "code") {
 
-                                    listRuns.push(
+                                    cellRuns.push(
                                         new TextRun({
                                             text: run.text,
                                             font: "Courier New",
@@ -582,12 +660,12 @@ async function createModuleDocument(moduleNumber, moduleTitle, lessons, outputPa
                                     cellRuns.push(
                                         new ExternalHyperlink({
                                             children: [
-                                                new TextRun({
+                                                createTextRun({
                                                     text: run.text,
                                                     style: "Hyperlink",
                                                     bold: run.bold || false,
                                                     italics: run.italics || false
-                                                })
+                                                }, isArabic)
                                             ],
                                             link: run.href
                                         })
@@ -597,9 +675,11 @@ async function createModuleDocument(moduleNumber, moduleTitle, lessons, outputPa
 
                             return new TableCell({
                                 children: [
-                                    new Paragraph({
-                                        children: cellRuns
-                                    })
+                                    createParagraph({
+                                        children: cellRuns,
+                        
+                        
+                                    }, isArabic)
                                 ],
                                 shading: rowIndex === 0
                                     ? {
@@ -624,13 +704,16 @@ async function createModuleDocument(moduleNumber, moduleTitle, lessons, outputPa
             } else if (item.type === "code") {
 
                 children.push(
-                    new Paragraph({
+                    createParagraph({
                         children: [
                             new TextRun({
                                 text: item.text,
-                                font: "Courier New"
+                                font: "Courier New",
+                                rightToLeft: false
                             })
                         ],
+                        alignment: AlignmentType.LEFT,
+                        bidirectional: false,
                         shading: {
                             type: ShadingType.CLEAR,
                             fill: "F2F2F2"
@@ -644,7 +727,7 @@ async function createModuleDocument(moduleNumber, moduleTitle, lessons, outputPa
                             after: 150,
                             line: 240
                         }
-                    })
+                    }, isArabic)
                 );
 
             } else if (item.type === "image") {
@@ -668,7 +751,7 @@ async function createModuleDocument(moduleNumber, moduleTitle, lessons, outputPa
                     height = Math.round(height * scale);
 
                     children.push(
-                        new Paragraph({
+                        createParagraph({
                             children: [
                                 new ImageRun({
                                     data: imageBuffer,
@@ -678,7 +761,7 @@ async function createModuleDocument(moduleNumber, moduleTitle, lessons, outputPa
                                     }
                                 })
                             ]
-                        })
+                        }, isArabic)
                     );
 
                 } catch (error) {
@@ -689,19 +772,19 @@ async function createModuleDocument(moduleNumber, moduleTitle, lessons, outputPa
             else if (item.type === "video") {
 
                 children.push(
-                    new Paragraph({
+                    createParagraph({
                         children: [
                             new ExternalHyperlink({
                                 children: [
-                                    new TextRun({
-                                        text: "▶ Watch video",
+                                    createTextRun({
+                                        text: isArabic ? "▶ مشاهدة الفيديو" : "▶ Watch video",
                                         style: "Hyperlink"
-                                    })
+                                    }, isArabic)
                                 ],
                                 link: item.src
                             })
                         ]
-                    })
+                    }, isArabic)
                 );
             }
         }
@@ -716,21 +799,128 @@ async function createModuleDocument(moduleNumber, moduleTitle, lessons, outputPa
                     levels: [
                         {
                             level: 0,
-                            format: "decimal",
+                            format: LevelFormat.DECIMAL,
                             text: "%1.",
-                            alignment: "left"
+                            alignment: isArabic ? AlignmentType.END : AlignmentType.START,
+                            // ADDED: Word inserts a TAB between the marker
+                            // and the text by default, and that tab stop's
+                            // position is computed left-to-right even
+                            // inside an RTL paragraph — this is what
+                            // causes the big empty gap between the marker
+                            // and the text in Word. A plain space avoids
+                            // the tab-stop math entirely.
+                            suffix: isArabic ? LevelSuffix.SPACE : LevelSuffix.TAB,
+                            style: {
+                                paragraph: {
+                                    // CHANGED: was `{ start: 360, hanging: 360 }`.
+                                    // `start`/`end` are logical indent
+                                    // properties, but Word does not mirror
+                                    // a numbering LEVEL's indent based on
+                                    // the paragraph's bidi setting the way
+                                    // it does for a paragraph's own indent.
+                                    // Physical right/left is what actually
+                                    // moves the number to the correct side.
+                                    indent: isArabic
+                                        ? { right: 360, hanging: 300 }
+                                        : { left: 360, hanging: 360 }
+                                }
+                            }
                         },
                         {
                             level: 1,
-                            format: "lowerRoman",
+                            format: LevelFormat.LOWER_ROMAN,
                             text: "%2.",
-                            alignment: "left"
+                            alignment: isArabic ? AlignmentType.END : AlignmentType.START,
+                            suffix: isArabic ? LevelSuffix.SPACE : LevelSuffix.TAB,
+                            style: {
+                                paragraph: {
+                                    // CHANGED: same fix as level 0 above.
+                                    indent: isArabic
+                                        ? { right: 720, hanging: 300 }
+                                        : { left: 720, hanging: 360 }
+                                }
+                            }
                         },
                         {
                             level: 2,
-                            format: "lowerLetter",
+                            format: LevelFormat.LOWER_LETTER,
                             text: "%3.",
-                            alignment: "left"
+                            alignment: isArabic ? AlignmentType.END : AlignmentType.START,
+                            suffix: isArabic ? LevelSuffix.SPACE : LevelSuffix.TAB,
+                            style: {
+                                paragraph: {
+                                    // CHANGED: same fix as level 0 above.
+                                    indent: isArabic
+                                        ? { right: 1080, hanging: 300 }
+                                        : { left: 1080, hanging: 360 }
+                                }
+                            }
+                        }
+                    ]
+                },
+                // ADDED: dedicated numbering definition for unordered
+                // (bullet) lists. Previously the code used the `bullet:`
+                // paragraph shorthand, which always generates a hardcoded
+                // LTR-only numbering definition (lvlJc="left") that cannot
+                // be flipped by any paragraph-level setting. Defining our
+                // own reference here — same pattern as the numbered list —
+                // lets bullets go RTL for Arabic content.
+                {
+                    reference: "lesson-bullet-list",
+                    levels: [
+                        {
+                            level: 0,
+                            format: LevelFormat.BULLET,
+                            text: "•",
+                            alignment: isArabic
+                                ? AlignmentType.RIGHT
+                                : AlignmentType.LEFT,
+                            suffix: isArabic
+                                ? LevelSuffix.SPACE
+                                : LevelSuffix.TAB,
+                            style: {
+                                paragraph: {
+                                    indent: isArabic
+                                        ? { right: 0, hanging: 0 }
+                                        : { left: 360, hanging: 360 }
+                                }
+                            }
+                        },
+                        {
+                            level: 1,
+                            format: LevelFormat.BULLET,
+                            text: "◦",
+                            alignment: isArabic
+                                ? AlignmentType.RIGHT
+                                : AlignmentType.LEFT,
+                            suffix: isArabic
+                                ? LevelSuffix.SPACE
+                                : LevelSuffix.TAB,
+                            style: {
+                                paragraph: {
+                                    indent: isArabic
+                                        ? { right: 0, hanging: 0 }
+                                        : { left: 720, hanging: 360 }
+                                }
+                            }
+                        },
+                        {
+                            level: 2,
+                            format: LevelFormat.BULLET,
+                            text: "▪",
+                            alignment: isArabic
+                                ? AlignmentType.RIGHT
+                                : AlignmentType.LEFT,
+                            suffix: isArabic
+                                ? LevelSuffix.SPACE
+                                : LevelSuffix.TAB,
+                            style: {
+                                paragraph: {
+                                    indent: isArabic
+                                        ? { right: 0, hanging: 0 }
+                                        : { left: 1080, hanging: 360 }
+                                }
+                            }
                         }
                     ]
                 }
@@ -743,17 +933,17 @@ async function createModuleDocument(moduleNumber, moduleTitle, lessons, outputPa
                 footers: {
                     default: new Footer({
                         children: [
-                            new Paragraph({
-                                alignment: "center",
+                            createParagraph({
+                
                                 children: [
                                     new TextRun({
                                         children: [
-                                            "Page ",
+                                            isArabic ? "الصفحة " : "Page ",
                                             PageNumber.CURRENT
                                         ]
                                     })
                                 ]
-                            })
+                            }, isArabic)
                         ]
                     })
                 }
